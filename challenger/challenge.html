@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Please wait a bit</title>
+  </head>
+  <body>
+    <h1>Verifiying your browser...</h1>
+    <h2>This could take a few seconds</h2>
+    <br /><br />
+    <p>Challenge id: {{challengeId}}</p>
+    <form id="challenge-form" action="/submit" method="POST">
+      <input type="hidden" name="challenge-id" value="{{challengeId}}" />
+      <input
+        type="hidden"
+        name="challenge-result"
+        id="challenge-result"
+        value=""
+      />
+    </form>
+    <script>
+      const resElem = document.getElementById('challenge-result');
+      let results = [];
+      !(async () => {
+        /*challenges*/
+        await new Promise((res) => setTimeout(res, 5000));
+      })().then(() => {
+        resElem.value = btoa(JSON.stringify(results));
+        document.getElementById('challenge-form').submit();
+      });
+    </script>
+  </body>
+</html>
