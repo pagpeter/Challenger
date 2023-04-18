@@ -9,10 +9,6 @@ const Challenger = new challenger()
 Challenger.setupApp(app)
 challenges(Challenger)
 
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
-
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
-})
+// Your typical express stuff 
+app.get('/', (req, res) => res.send('Hello World!'))
+app.listen(port, () => console.log(`Example app listening on port ${port}`))
