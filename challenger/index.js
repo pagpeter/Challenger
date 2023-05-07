@@ -1,8 +1,4 @@
 const crypto = require('node:crypto');
-
-const express = require('express');
-const cookieParser = require('cookie-parser');
-
 const { CHALLENGE } = require('./constants');
 
 const uuid = () => {
@@ -24,12 +20,12 @@ module.exports = class Challenger {
   }
 
   setupApp(app) {
-    app.use(cookieParser());
-    app.use(
-      express.urlencoded({
-        extended: true,
-      })
-    );
+    // app.use(cookieParser());
+    // app.use(
+    //   express.urlencoded({
+    //     extended: true,
+    //   })
+    // );
     app.use(this.middleware());
   }
 
@@ -58,7 +54,7 @@ module.exports = class Challenger {
     });
     const trust = trustScore / maxTrustScore;
     this.debug(`TRUST: ${trustScore}/${maxTrustScore} (${trust * 100}%)`);
-    return trust >= this.config.neededTrust;
+    return trust;
   }
 
   makeChallenge() {
@@ -131,10 +127,8 @@ module.exports = class Challenger {
       });
     }
 
-    const validResult = this.verifyChallengeData(
-      req.body['challenge-result'],
-      chlId
-    );
+    const trust = this.verifyChallengeData(req.body['challenge-result'], chlId);
+    const validResult = trust >= this.config.neededTrust;
     if (!validResult) {
       this.debug('Invalid result!');
       try {
@@ -150,6 +144,7 @@ module.exports = class Challenger {
       (chl) => chl.id !== chlId
     );
     this.verifiedHeaders[chlId] = true;
+    res.header('x-trust-score', `${trust * 100}%`);
     res.cookie(this.config.headerName, chlId);
     res.redirect(challengeData.location);
   }

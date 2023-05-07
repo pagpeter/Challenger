@@ -1,14 +1,30 @@
-const express = require('express')
-const challenger = require("./challenger")
-const challenges = require("./exampleChallenges")
+const ChallengerPassive = require('./challenger/custom_server');
+const ChallengerActive = require('./challenger');
+const challenges = require('./exampleChallenges');
 
-const app = express()
-const port = 3000
-const Challenger = new challenger()
+const app = new ChallengerPassive({
+  tls: {
+    key: ChallengerPassive.loadFile('./example_cert/key.pem'),
+    cert: ChallengerPassive.loadFile('./example_cert/cert.pem'),
+  },
+});
 
-Challenger.setupApp(app)
-challenges(Challenger)
+const host = 'localhost';
+const port = 8443;
 
-// Your typical express stuff 
-app.get('/', (req, res) => res.send('Hello World!'))
-app.listen(port, () => console.log(`Example app listening on port ${port}`))
+const challenger = new ChallengerActive();
+challenger.setupApp(app);
+challenges(challenger);
+
+app.get('/', async (req, res) => {
+  console.log('New request: /');
+  res.send(`You are verified! Your JA3 is: ${req.tls.ja3Hash}`);
+});
+
+app.get('/submit', async (req, res) => {
+  res.redirect('/');
+});
+
+app.start(host, port, (e) =>
+  console.log(`Server listening on https://${host}:${port}`)
+);

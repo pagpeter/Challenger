@@ -42,7 +42,13 @@ const getServerCallbackFunc = (tlsServer, onData) => {
       proxyStream.push(d);
     });
 
-    proxyStream.on('data', onData);
+    proxyStream.on('data', (data) =>
+      onData(data, {
+        addr: socket.remoteAddress,
+        fam: socket.remoteFamily,
+        port: socket.remotePort,
+      })
+    );
 
     tlsServer.emit('connection', proxyStream);
   };
@@ -59,8 +65,9 @@ module.exports = (config) => {
     socket.write(response);
   };
 
-  const NETOnData = async (data) => {
+  const NETOnData = async (data, ip) => {
     const pkg = new PacketParser(data);
+    pkg.ip = ip;
     if (pkg.isClientHello) tlsChan.write(pkg.out());
   };
 

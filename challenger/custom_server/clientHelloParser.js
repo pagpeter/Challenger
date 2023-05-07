@@ -1,4 +1,7 @@
 const { CIPHERS, EXTENSIONS, GREASE } = require('../constants');
+const crypto = require('node:crypto');
+
+const md5 = (data) => crypto.createHash('md5').update(data).digest('hex');
 
 const fromBytes = (...bytes) => {
   const buf = Buffer.from([...bytes]);
@@ -21,6 +24,7 @@ module.exports = class PacketParser {
       extensions: [],
       parsedExtensions: [],
       extensionsLength: 0,
+      ja3: null,
     };
 
     this.c = 0; // cursor
@@ -29,6 +33,19 @@ module.exports = class PacketParser {
     if (!isHandshake) return;
 
     this.parseAll();
+    this.calculateJa3();
+  }
+
+  calculateJa3() {
+    let ja3Vals = [];
+
+    ja3Vals.push(this.p.outerTlsVersion);
+    ja3Vals.push(this.p.cipherSuites.join('-'));
+    ja3Vals.push(this.p.extensions.map((e) => e.type).join('-'));
+    ja3Vals.push('0');
+    ja3Vals.push('0');
+
+    this.p.ja3 = ja3Vals.join(',');
   }
 
   readOne() {
@@ -90,7 +107,7 @@ module.exports = class PacketParser {
     // parse cipher suites
     this.p.cipherSuitesLength = this.IntFromNBytes(2);
     for (let i = 0; i < this.p.cipherSuitesLength; i += 2)
-      this.p.cipherSuites.push(this.getCipherName(this.IntFromNBytes(2)));
+      this.p.cipherSuites.push(this.IntFromNBytes(2));
 
     this.p.compressionMethodsLength = this.IntFromNBytes(1);
     for (let i = 0; i < this.p.compressionMethodsLength; i++)
@@ -142,9 +159,12 @@ module.exports = class PacketParser {
       version: this.p.version,
       random: this.p.clientRandom,
       sessionId: this.p.sessionId || '',
-      cipherSuites: this.p.cipherSuites,
+      cipherSuites: this.p.cipherSuites.map((c) => this.getCipherName(c)),
       compression: this.p.compressionMethods,
       extensions: this.p.parsedExtensions,
+      ja3: this.p.ja3,
+      ja3Hash: md5(this.p.ja3),
+      ip: `${this.ip?.addr}:${this.ip?.port}`,
     };
   }
 };

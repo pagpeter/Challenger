@@ -8,7 +8,7 @@ module.exports = (data) => {
   const headerObj = {};
   headers.forEach((h) => {
     const parts = h.split(': ');
-    headerObj[parts[0]] = parts[1];
+    headerObj[parts[0].toLowerCase()] = parts[1];
   });
 
   const reqLineParts = startLine.split(' ');
@@ -16,7 +16,7 @@ module.exports = (data) => {
   return {
     method: reqLineParts[0],
     path: reqLineParts[1],
-    headers: headers,
+    headers: headerObj,
     body,
   };
 };

@@ -1,6 +1,6 @@
 const createServer = require('./createServer');
 const Response = require('./response');
-const parseHttpData = require('./httpParser');
+const Request = require('./request');
 const fs = require('node:fs');
 
 module.exports = class Server {
@@ -12,6 +12,7 @@ module.exports = class Server {
     config.reqHandler = async (...args) => await this.requestHandler(...args);
     this.server = createServer(config);
     this.routes = {};
+    this.middlewares = [];
     this.notfound((req, res) => {
       res.send(`Path ${req.path} doesn't exist!`);
     });
@@ -22,17 +23,27 @@ module.exports = class Server {
   }
 
   async requestHandler(data, tls) {
-    const req = parseHttpData(data);
-    req.tls = tls;
-    const { method, path } = req;
-
+    const req = new Request(data, tls);
     const res = new Response();
 
-    if (this.routes[`${method.toUpperCase()}_${path}`])
-      await this.routes[`${method}_${path}`](req, res);
+    for (const middleware of this.middlewares) {
+      let willContinue = false;
+      const next = () => (willContinue = true);
+      await middleware(req, res, next);
+      if (res.redirected) return res.marshalResponse();
+      if (!willContinue) return res.marshalResponse();
+      if (res.ended || req.ended) return res.marshalResponse();
+    }
+
+    if (this.routes[`${req.method.toUpperCase()}_${req.path}`])
+      await this.routes[`${req.method}_${req.path}`](req, res);
     else await this.routes.notfound(req, res);
 
     return res.marshalResponse();
+  }
+
+  use(cb) {
+    this.middlewares.push(cb);
   }
 
   get(path, cb) {
