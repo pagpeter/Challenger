@@ -25,7 +25,7 @@
       let results = [];
       !(async () => {
         /*challenges*/
-        await new Promise((res) => setTimeout(res, 5000));
+        await new Promise((res) => setTimeout(res, 1000));
       })().then(() => {
         resElem.value = btoa(JSON.stringify(results));
         document.getElementById('challenge-form').submit();
